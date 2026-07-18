@@ -10,43 +10,46 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download and Extract Container2Wasm
+      - name: Download and Extract Container2Wasm Binary
         run: |
+          # 1. Pull the exact binary tarball asset link provided
           curl -L -o c2w.tar.gz "https://github.com/container2wasm/container2wasm/releases/download/v0.8.4/container2wasm-v0.8.4-linux-amd64.tar.gz"
+          
+          # 2. Extract the c2w binary tool from the archive package
           tar -xf c2w.tar.gz
-          sudo mv c2w /usr/local/bin/
+          
+          # 3. Mount it to system path workspace globally
+          sudo mv container2wasm-v0.8.4-linux-amd64/c2w /usr/local/bin/
           chmod +x /usr/local/bin/c2w
-          rm c2w.tar.gz
+          rm -rf c2w.tar.gz container2wasm-v0.8.4-linux-amd64
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Build and Convert to WebAssembly
         run: |
-          # Build your custom Docker layout image
+          # Build your custom Docker system configuration
           docker build -t axelos-base -f .devcontainer/Dockerfile .
           
-          # Clean, stable browser target execution block
+          # Bypasses internal git assets using the native binary call
           c2w --to-js axelos-base ./cloudflare-raw/
 
       - name: Manual Fail-Safe Chunk Slicing
         run: |
           mkdir -p ./cloudflare-dist/
           
-          # Copy small interface files directly into the delivery folder
+          # Copy standard delivery HTML interface documents
           cp ./cloudflare-raw/*.js ./cloudflare-dist/ 2>/dev/null || true
           cp ./cloudflare-raw/*.html ./cloudflare-dist/ 2>/dev/null || true
           
-          # Safely cut any large image outputs into 15MB chunks to bypass Cloudflare constraints
+          # Process the compiled folders and chunk files down to 15MB 
           if [ -d ./cloudflare-raw/htdocs ]; then
-            # Handles compiled target directory blocks
             cp -R ./cloudflare-raw/htdocs/* ./cloudflare-dist/ 2>/dev/null || true
             if [ -f ./cloudflare-dist/*.wasm ]; then
               split -b 15M ./cloudflare-dist/*.wasm ./cloudflare-dist/wasm-chunk.
               rm ./cloudflare-dist/*.wasm
             fi
           else
-            # Handles generic files
             split -b 15M ./cloudflare-raw/* ./cloudflare-dist/chunk.
           fi
 
