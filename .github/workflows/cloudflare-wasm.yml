@@ -12,29 +12,39 @@ jobs:
 
       - name: Download and Extract Container2Wasm
         run: |
-          # 1. Download the official release archive file (v0.8.4)
-          curl -L -o c2w.tar.gz "https://github.com/container2wasm/container2wasm/releases/download/v0.8.4/container2wasm-v0.8.4-linux-amd64.tar.gz"
-          
-          # 2. Extract the c2w binary file from the archive
+          curl -L -o c2w.tar.gz "https://github.com"
           tar -xf c2w.tar.gz
-          
-          # 3. Move the binary into your server system path
           sudo mv c2w /usr/local/bin/
           chmod +x /usr/local/bin/c2w
-          
-          # 4. Clean up temporary archive file
           rm c2w.tar.gz
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Build and Convert to Split WebAssembly
+      - name: Build and Convert to WebAssembly
         run: |
           # Build your custom Docker layout image
           docker build -t axelos-base -f .devcontainer/Dockerfile .
           
-          # Convert to JS/WASM and slice it into safe 20MB data chunks
-          c2w --to-js --chunk-size=20M axelos-base ./cloudflare-dist/
+          # Compile container into raw JS/WASM output directory
+          c2w --to-js axelos-base ./cloudflare-raw/
+
+      - name: Manual Fail-Safe Chunk Slicing
+        run: |
+          mkdir -p ./cloudflare-dist/
+          
+          # Move small interface files directly into the delivery folder
+          cp ./cloudflare-raw/*.js ./cloudflare-dist/ 2>/dev/null || true
+          cp ./cloudflare-raw/*.html ./cloudflare-dist/ 2>/dev/null || true
+          
+          # Find the heavy .wasm or binary image file and slice it into safe 15MB pieces
+          # This completely avoids Cloudflare's asset size limits automatically
+          if [ -f ./cloudflare-raw/*.wasm ]; then
+            split -b 15M ./cloudflare-raw/*.wasm ./cloudflare-dist/wasm-chunk.
+          else
+            # Handles generic binary images if no raw .wasm is outputted
+            split -b 15M ./cloudflare-raw/* ./cloudflare-dist/chunk.
+          fi
 
       - name: Deploy Split Assets to Pages Branch
         uses: JamesIves/github-pages-deploy-action@v4
