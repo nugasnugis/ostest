@@ -12,7 +12,7 @@ jobs:
 
       - name: Download and Extract Container2Wasm Binary
         run: |
-          curl -L -o c2w.tar.gz "https://github.com"
+          curl -L -o c2w.tar.gz "https://github.com/container2wasm/container2wasm/releases/download/v0.8.4/container2wasm-v0.8.4-linux-amd64.tar.gz"
           tar -xf c2w.tar.gz
           sudo mv c2w c2w-net /usr/local/bin/
           chmod +x /usr/local/bin/c2w /usr/local/bin/c2w-net
