@@ -23,11 +23,11 @@ jobs:
 
       - name: Build and Convert to WebAssembly
         run: |
-          # Build your custom Docker system configuration
+          # 1. Build your custom Docker layout image
           docker build -t axelos-base -f .devcontainer/Dockerfile .
           
-          # Convert container to JS/WASM layout using the active binary
-          c2w --to-js axelos-base ./cloudflare-raw/
+          # 2. Added --external-bundle to completely block the broken git clone step
+          c2w --to-js --external-bundle axelos-base ./cloudflare-raw/
 
       - name: Manual Fail-Safe Chunk Slicing
         run: |
