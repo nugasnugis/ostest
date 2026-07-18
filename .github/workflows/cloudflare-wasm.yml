@@ -12,16 +12,11 @@ jobs:
 
       - name: Download and Extract Container2Wasm Binary
         run: |
-          # 1. Pull the exact binary tarball asset link provided
-          curl -L -o c2w.tar.gz "https://github.com/container2wasm/container2wasm/releases/download/v0.8.4/container2wasm-v0.8.4-linux-amd64.tar.gz"
-          
-          # 2. Extract the c2w binary tool from the archive package
+          curl -L -o c2w.tar.gz "https://github.com"
           tar -xf c2w.tar.gz
-          
-          # 3. Mount it to system path workspace globally
-          sudo mv container2wasm-v0.8.4-linux-amd64/c2w /usr/local/bin/
-          chmod +x /usr/local/bin/c2w
-          rm -rf c2w.tar.gz container2wasm-v0.8.4-linux-amd64
+          sudo mv c2w c2w-net /usr/local/bin/
+          chmod +x /usr/local/bin/c2w /usr/local/bin/c2w-net
+          rm c2w.tar.gz
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -31,18 +26,18 @@ jobs:
           # Build your custom Docker system configuration
           docker build -t axelos-base -f .devcontainer/Dockerfile .
           
-          # Bypasses internal git assets using the native binary call
+          # Convert container to JS/WASM layout using the active binary
           c2w --to-js axelos-base ./cloudflare-raw/
 
       - name: Manual Fail-Safe Chunk Slicing
         run: |
           mkdir -p ./cloudflare-dist/
           
-          # Copy standard delivery HTML interface documents
+          # Copy standard interface runtime assets
           cp ./cloudflare-raw/*.js ./cloudflare-dist/ 2>/dev/null || true
           cp ./cloudflare-raw/*.html ./cloudflare-dist/ 2>/dev/null || true
           
-          # Process the compiled folders and chunk files down to 15MB 
+          # Slice heavy compiled targets down into network-safe 15MB chunks
           if [ -d ./cloudflare-raw/htdocs ]; then
             cp -R ./cloudflare-raw/htdocs/* ./cloudflare-dist/ 2>/dev/null || true
             if [ -f ./cloudflare-dist/*.wasm ]; then
