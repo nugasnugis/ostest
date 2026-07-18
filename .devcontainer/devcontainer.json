@@ -1,0 +1,15 @@
+{
+  "name": "Custom Live OS Platform",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts":,
+  "portsAttributes": {
+    "6080": {
+      "label": "Live Desktop Screen",
+      "onAutoForward": "ignore",
+      "visibility": "public" 
+    }
+  },
+  "postStartCommand": "/usr/local/bin/start-os.sh"
+}
