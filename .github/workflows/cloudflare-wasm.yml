@@ -1,0 +1,43 @@
+name: Compile AxelOS to Cloudflare Chunks
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download and Extract Container2Wasm
+        run: |
+          # 1. Download the official release archive file (v0.8.4)
+          curl -L -o c2w.tar.gz "https://github.com/container2wasm/container2wasm/releases/download/v0.8.4/container2wasm-v0.8.4-linux-amd64.tar.gz"
+          
+          # 2. Extract the c2w binary file from the archive
+          tar -xf c2w.tar.gz
+          
+          # 3. Move the binary into your server system path
+          sudo mv c2w /usr/local/bin/
+          chmod +x /usr/local/bin/c2w
+          
+          # 4. Clean up temporary archive file
+          rm c2w.tar.gz
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Convert to Split WebAssembly
+        run: |
+          # Build your custom Docker layout image
+          docker build -t axelos-base -f .devcontainer/Dockerfile .
+          
+          # Convert to JS/WASM and slice it into safe 20MB data chunks
+          c2w --to-js --chunk-size=20M axelos-base ./cloudflare-dist/
+
+      - name: Deploy Split Assets to Pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: cloudflare-dist
+          branch: cloudflare-deploy
